@@ -67,7 +67,7 @@
             try {
                 if (mode === 'register') {
                     // Check if username exists
-                    const { data: existing, error: existErr } = await supabase.from('profiles').select('username').eq('username', username).maybeSingle();
+                    const { data: existing, error: existErr } = await supabaseClient.from('profiles').select('username').eq('username', username).maybeSingle();
                     
                     if (existErr && existErr.code !== 'PGRST116') {
                         // Throw if there is an error OTHER than "no rows found"
@@ -80,7 +80,7 @@
                     }
 
                     // Register
-                    const { data, error } = await supabase.auth.signUp({
+                    const { data, error } = await supabaseClient.auth.signUp({
                         email,
                         password,
                         options: {
@@ -99,7 +99,7 @@
                     }
                     
                     // Create profile
-                    const { error: profileError } = await supabase.from('profiles').insert([
+                    const { error: profileError } = await supabaseClient.from('profiles').insert([
                         { id: data.user.id, username: username }
                     ]);
                     
@@ -112,7 +112,7 @@
                     
                 } else {
                     // Login
-                    const { data, error } = await supabase.auth.signInWithPassword({
+                    const { data, error } = await supabaseClient.auth.signInWithPassword({
                         email,
                         password
                     });
