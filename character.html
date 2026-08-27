@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotionX - My Character</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header>
+        <h1>MotionX</h1>
+        <nav>
+            <a href="index.html">Scoreboard</a>
+            <a href="#" id="nav-logout" onclick="logout()">Logout</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="panel" id="char-panel" style="display:none;">
+            <h2 id="char-name">Player Stats</h2>
+            <table>
+                <tr><th>Total Coins</th><td id="stat-coins">0</td></tr>
+                <tr><th>Total Reps</th><td id="stat-reps">0</td></tr>
+                <tr><th>Max Streak</th><td id="stat-streak">0</td></tr>
+                <tr><th>Time Survived</th><td id="stat-time">0s</td></tr>
+                <tr><th>Games Played</th><td id="stat-games">0</td></tr>
+            </table>
+        </div>
+        <div id="loading-msg" style="font-size:1.5rem; text-align:center;">Loading profile...</div>
+    </main>
+
+    <script src="app.js"></script>
+    <script>
+        async function loadProfile() {
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (!session) {
+                window.location.href = 'auth.html';
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+
+            document.getElementById('loading-msg').style.display = 'none';
+
+            if (error) {
+                document.getElementById('char-panel').innerHTML = `<h2 class="error">Error loading profile</h2>`;
+                document.getElementById('char-panel').style.display = 'block';
+                return;
+            }
+
+            document.getElementById('char-name').innerText = `${data.username}'s Profile`;
+            document.getElementById('stat-coins').innerText = data.coins;
+            document.getElementById('stat-reps').innerText = data.reps;
+            document.getElementById('stat-streak').innerText = data.max_streak;
+            document.getElementById('stat-time').innerText = data.total_duration + 's';
+            document.getElementById('stat-games').innerText = data.games_played;
+            
+            document.getElementById('char-panel').style.display = 'block';
+        }
+
+        async function logout() {
+            await supabase.auth.signOut();
+            window.location.href = 'index.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', loadProfile);
+    </script>
+</body>
+</html>

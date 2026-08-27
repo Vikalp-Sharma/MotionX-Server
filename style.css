@@ -1,0 +1,173 @@
+@font-face {
+    font-family: 'PixelFont';
+    src: url('assets/pixel_font.ttf') format('truetype');
+}
+
+:root {
+    --bg-color: #1a1412;
+    --panel-bg: #2d241f;
+    --border-color: #d4a373;
+    --text-color: #faedcd;
+    --accent-color: #e9c46a;
+    --error-color: #e53935;
+    --success-color: #388e3c;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'PixelFont', monospace;
+    image-rendering: pixelated;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+header {
+    background-color: var(--panel-bg);
+    border-bottom: 4px solid var(--border-color);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header h1 {
+    color: var(--accent-color);
+    font-size: 2rem;
+    text-shadow: 2px 2px 0 #000;
+}
+
+nav a {
+    color: var(--text-color);
+    text-decoration: none;
+    margin-left: 1.5rem;
+    font-size: 1.2rem;
+    transition: color 0.2s;
+}
+
+nav a:hover {
+    color: var(--accent-color);
+}
+
+main {
+    flex: 1;
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.panel {
+    background-color: var(--panel-bg);
+    border: 4px solid var(--border-color);
+    padding: 2rem;
+    width: 100%;
+    max-width: 600px;
+    box-shadow: 8px 8px 0 rgba(0,0,0,0.5);
+}
+
+h2 {
+    color: var(--accent-color);
+    margin-bottom: 1.5rem;
+    text-align: center;
+    text-shadow: 2px 2px 0 #000;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+input {
+    width: 100%;
+    background-color: var(--bg-color);
+    border: 2px solid var(--border-color);
+    color: var(--text-color);
+    padding: 0.8rem;
+    font-size: 1rem;
+    outline: none;
+}
+
+input:focus {
+    border-color: var(--accent-color);
+}
+
+button {
+    width: 100%;
+    background-color: var(--border-color);
+    color: var(--bg-color);
+    border: none;
+    padding: 1rem;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    margin-top: 1rem;
+}
+
+button:hover {
+    background-color: var(--accent-color);
+}
+
+button:active {
+    transform: translateY(2px);
+}
+
+.error {
+    color: var(--error-color);
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.success {
+    color: var(--success-color);
+    margin-top: 1rem;
+    text-align: center;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+th, td {
+    padding: 0.8rem;
+    text-align: left;
+    border-bottom: 2px solid var(--bg-color);
+}
+
+th {
+    color: var(--accent-color);
+}
+
+.tabs {
+    display: flex;
+    margin-bottom: 1rem;
+}
+
+.tab {
+    flex: 1;
+    text-align: center;
+    padding: 0.8rem;
+    background-color: var(--bg-color);
+    cursor: pointer;
+    border: 2px solid var(--border-color);
+    border-bottom: none;
+}
+
+.tab.active {
+    background-color: var(--panel-bg);
+    color: var(--accent-color);
+}

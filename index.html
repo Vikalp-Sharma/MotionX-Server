@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotionX - Global Scoreboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <header>
+        <h1>MotionX</h1>
+        <nav>
+            <a href="index.html">Scoreboard</a>
+            <a href="auth.html" id="nav-auth">Login/Register</a>
+            <a href="character.html" id="nav-char" style="display:none;">My Character</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="panel">
+            <h2>Global Scoreboard</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>Coins</th>
+                        <th>Max Streak</th>
+                        <th>Time (s)</th>
+                    </tr>
+                </thead>
+                <tbody id="scoreboard-body">
+                    <tr><td colspan="5" style="text-align:center;">Loading data from Supabase...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('username, coins, max_streak, total_duration')
+                .order('coins', { ascending: false })
+                .limit(100);
+
+            const tbody = document.getElementById('scoreboard-body');
+            
+            if (error) {
+                tbody.innerHTML = `<tr><td colspan="5" class="error">Error loading scores: ${error.message}</td></tr>`;
+                return;
+            }
+
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No scores yet. Be the first!</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = data.map((player, index) => `
+                <tr>
+                    <td>#${index + 1}</td>
+                    <td>${player.username}</td>
+                    <td>${player.coins}</td>
+                    <td>${player.max_streak}</td>
+                    <td>${player.total_duration}</td>
+                </tr>
+            `).join('');
+        });
+    </script>
+</body>
+</html>
