@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotionX - Admin Panel</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .admin-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .admin-table th, .admin-table td { border: 2px solid var(--accent-color); padding: 10px; text-align: center; }
+        .admin-table th { background: rgba(0,0,0,0.5); color: var(--accent-color); }
+        .action-btn { font-size: 0.8rem; padding: 5px 10px; margin: 2px; }
+        .delete-btn { background: #d32f2f; color: white; border-color: #b71c1c; }
+        .delete-btn:hover { background: #f44336; border-color: #d32f2f; }
+        .edit-input { width: 60px; background: rgba(0,0,0,0.5); color: white; border: 1px solid var(--accent-color); font-family: inherit; text-align: center; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>MotionX Admin</h1>
+        <nav>
+            <a href="index.html">Back to Site</a>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Login Panel -->
+        <div class="panel" id="login-panel">
+            <h2>Admin Login</h2>
+            <form id="admin-login-form">
+                <div class="form-group">
+                    <label for="admin-pass">Admin Password</label>
+                    <input type="password" id="admin-pass" required>
+                </div>
+                
+                <div class="form-group">
+                    <label id="captcha-label"></label>
+                    <input type="number" id="captcha-input" required placeholder="Answer">
+                </div>
+
+                <button type="submit">Login</button>
+                <div id="login-msg"></div>
+            </form>
+        </div>
+
+        <!-- Dashboard Panel -->
+        <div class="panel" id="dashboard-panel" style="display:none; max-width: 900px; width: 95%;">
+            <h2>Player Management</h2>
+            <div id="dash-msg"></div>
+            <div style="overflow-x: auto;">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Coins</th>
+                            <th>Reps</th>
+                            <th>Time (s)</th>
+                            <th>Streak</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-list">
+                        <tr><td colspan="6">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+    <script>
+        let adminPassword = "";
+        let expectedCaptcha = 0;
+
+        function generateCaptcha() {
+            const a = Math.floor(Math.random() * 10) + 1;
+            const b = Math.floor(Math.random() * 10) + 1;
+            expectedCaptcha = a + b;
+            document.getElementById('captcha-label').innerText = `What is ${a} + ${b}? (Anti-bot check)`;
+        }
+
+        document.addEventListener('DOMContentLoaded', generateCaptcha);
+
+        document.getElementById('admin-login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const pass = document.getElementById('admin-pass').value;
+            const captcha = parseInt(document.getElementById('captcha-input').value);
+            const msg = document.getElementById('login-msg');
+
+            if (captcha !== expectedCaptcha) {
+                msg.innerHTML = '<span class="error">Incorrect CAPTCHA!</span>';
+                generateCaptcha();
+                return;
+            }
+
+            msg.innerHTML = '<span style="color:var(--accent-color)">Verifying...</span>';
+
+            try {
+                // Call RPC to verify password via a dummy LOGIN action
+                const { data, error } = await window.supabaseClient.rpc('admin_manage', {
+                    p_pass: pass,
+                    p_action: 'LOGIN'
+                });
+
+                if (error) {
+                    msg.innerHTML = `<span class="error">RPC Error: ${error.message}</span>`;
+                } else if (data.success) {
+                    adminPassword = pass;
+                    document.getElementById('login-panel').style.display = 'none';
+                    document.getElementById('dashboard-panel').style.display = 'block';
+                    loadUsers();
+                } else {
+                    msg.innerHTML = `<span class="error">${data.message}</span>`;
+                    generateCaptcha();
+                }
+            } catch (err) {
+                msg.innerHTML = `<span class="error">Exception: ${err.message}</span>`;
+            }
+        });
+
+        async function loadUsers() {
+            const tbody = document.getElementById('user-list');
+            
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('profiles')
+                    .select('*')
+                    .order('coins', { ascending: false });
+
+                if (error) throw error;
+
+                tbody.innerHTML = '';
+                
+                data.forEach(user => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${user.username}</td>
+                        <td><input type="number" class="edit-input" id="coins-${user.username}" value="${user.coins}"></td>
+                        <td><input type="number" class="edit-input" id="reps-${user.username}" value="${user.reps}"></td>
+                        <td><input type="number" class="edit-input" id="time-${user.username}" value="${user.total_duration}"></td>
+                        <td><input type="number" class="edit-input" id="streak-${user.username}" value="${user.max_streak}"></td>
+                        <td>
+                            <button class="action-btn" onclick="saveUser('${user.username}')">Save</button>
+                            <button class="action-btn delete-btn" onclick="deleteUser('${user.username}')">Delete</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                document.getElementById('dash-msg').innerHTML = `<span class="error">Error loading users: ${err.message}</span>`;
+            }
+        }
+
+        async function saveUser(username) {
+            const coins = parseInt(document.getElementById(`coins-${username}`).value);
+            const reps = parseInt(document.getElementById(`reps-${username}`).value);
+            const time = parseInt(document.getElementById(`time-${username}`).value);
+            const streak = parseInt(document.getElementById(`streak-${username}`).value);
+            
+            const msg = document.getElementById('dash-msg');
+            msg.innerHTML = `<span style="color:var(--accent-color)">Saving ${username}...</span>`;
+
+            try {
+                const { data, error } = await window.supabaseClient.rpc('admin_manage', {
+                    p_pass: adminPassword,
+                    p_action: 'UPDATE',
+                    p_username: username,
+                    p_coins: coins,
+                    p_reps: reps,
+                    p_duration: time,
+                    p_streak: streak
+                });
+
+                if (error) throw error;
+                if (data.success) {
+                    msg.innerHTML = `<span class="success">${username} updated!</span>`;
+                } else {
+                    msg.innerHTML = `<span class="error">${data.message}</span>`;
+                }
+            } catch (err) {
+                msg.innerHTML = `<span class="error">Update failed: ${err.message}</span>`;
+            }
+        }
+
+        async function deleteUser(username) {
+            if (!confirm(`Are you absolutely sure you want to delete ${username}?`)) return;
+
+            const msg = document.getElementById('dash-msg');
+            msg.innerHTML = `<span style="color:var(--accent-color)">Deleting ${username}...</span>`;
+
+            try {
+                const { data, error } = await window.supabaseClient.rpc('admin_manage', {
+                    p_pass: adminPassword,
+                    p_action: 'DELETE',
+                    p_username: username
+                });
+
+                if (error) throw error;
+                if (data.success) {
+                    msg.innerHTML = `<span class="success">${username} deleted!</span>`;
+                    loadUsers();
+                } else {
+                    msg.innerHTML = `<span class="error">${data.message}</span>`;
+                }
+            } catch (err) {
+                msg.innerHTML = `<span class="error">Delete failed: ${err.message}</span>`;
+            }
+        }
+    </script>
+</body>
+</html>

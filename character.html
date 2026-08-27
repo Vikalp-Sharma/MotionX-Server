@@ -6,6 +6,11 @@
     <title>MotionX - My Character</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .danger-zone { margin-top: 30px; padding: 15px; border: 2px dashed #d32f2f; background: rgba(0,0,0,0.3); border-radius: 8px; text-align: center; }
+        .danger-btn { background: transparent; border: 2px solid #d32f2f; color: #d32f2f; cursor: pointer; padding: 8px 16px; font-family: inherit; transition: 0.2s; }
+        .danger-btn:hover { background: #d32f2f; color: white; }
+    </style>
 </head>
 <body>
     <header>
@@ -26,6 +31,12 @@
                 <tr><th>Time Survived</th><td id="stat-time">0s</td></tr>
                 <tr><th>Games Played</th><td id="stat-games">0</td></tr>
             </table>
+
+            <div class="danger-zone">
+                <h3 style="color: #d32f2f; margin-top: 0;">Danger Zone</h3>
+                <button class="danger-btn" id="btn-delete-account">Delete My Account</button>
+                <div id="delete-msg" style="margin-top: 10px; font-size: 0.9rem;"></div>
+            </div>
         </div>
         <div id="loading-msg" style="font-size:1.5rem; text-align:center;">Loading profile...</div>
     </main>
@@ -72,6 +83,36 @@
             e.preventDefault();
             localStorage.removeItem('motionx_user');
             window.location.href = 'index.html';
+        });
+
+        document.getElementById('btn-delete-account').addEventListener('click', async () => {
+            const username = localStorage.getItem('motionx_user');
+            if (!username) return;
+
+            const pass = prompt(`WARNING: This is permanent!\nTo delete your account, please type your password for '${username}':`);
+            if (!pass) return;
+
+            const msg = document.getElementById('delete-msg');
+            msg.innerHTML = '<span style="color:var(--accent-color)">Deleting...</span>';
+
+            try {
+                const { data, error } = await window.supabaseClient.rpc('delete_self', {
+                    p_username: username,
+                    p_password: pass
+                });
+
+                if (error) {
+                    msg.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+                } else if (data === true) {
+                    alert("Your account has been deleted.");
+                    localStorage.removeItem('motionx_user');
+                    window.location.href = 'index.html';
+                } else {
+                    msg.innerHTML = '<span class="error">Incorrect password!</span>';
+                }
+            } catch (err) {
+                msg.innerHTML = `<span class="error">Exception: ${err.message}</span>`;
+            }
         });
     </script>
 </body>
