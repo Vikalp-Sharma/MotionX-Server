@@ -12,7 +12,7 @@
         <h1>MotionX</h1>
         <nav>
             <a href="index.html">Scoreboard</a>
-            <a href="#" id="nav-logout" onclick="logout()">Logout</a>
+            <a href="#" id="nav-logout">Logout</a>
         </nav>
     </header>
 
@@ -32,44 +32,47 @@
 
     <script src="app.js"></script>
     <script>
-        async function loadProfile() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
+        document.addEventListener('DOMContentLoaded', async () => {
+            const username = localStorage.getItem('motionx_user');
             
-            if (!session) {
+            if (!username) {
                 window.location.href = 'auth.html';
                 return;
             }
 
-            const { data, error } = await supabaseClient
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('profiles')
+                    .select('*')
+                    .eq('username', username)
+                    .single();
 
-            document.getElementById('loading-msg').style.display = 'none';
+                document.getElementById('loading-msg').style.display = 'none';
 
-            if (error) {
-                document.getElementById('char-panel').innerHTML = `<h2 class="error">Error loading profile</h2>`;
+                if (error) {
+                    document.getElementById('char-panel').innerHTML = `<h2 class="error">Error loading profile</h2>`;
+                    document.getElementById('char-panel').style.display = 'block';
+                    return;
+                }
+
+                document.getElementById('char-name').innerText = `${data.username}'s Profile`;
+                document.getElementById('stat-coins').innerText = data.coins;
+                document.getElementById('stat-reps').innerText = data.reps;
+                document.getElementById('stat-time').innerText = data.total_duration + 's';
+                document.getElementById('stat-streak').innerText = data.max_streak;
+                document.getElementById('stat-games').innerText = data.games_played;
+                
                 document.getElementById('char-panel').style.display = 'block';
-                return;
+            } catch (err) {
+                console.error("Exception:", err);
             }
+        });
 
-            document.getElementById('char-name').innerText = `${data.username}'s Profile`;
-            document.getElementById('stat-coins').innerText = data.coins;
-            document.getElementById('stat-reps').innerText = data.reps;
-            document.getElementById('stat-streak').innerText = data.max_streak;
-            document.getElementById('stat-time').innerText = data.total_duration + 's';
-            document.getElementById('stat-games').innerText = data.games_played;
-            
-            document.getElementById('char-panel').style.display = 'block';
-        }
-
-        async function logout() {
-            await supabaseClient.auth.signOut();
+        document.getElementById('nav-logout').addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('motionx_user');
             window.location.href = 'index.html';
-        }
-
-        document.addEventListener('DOMContentLoaded', loadProfile);
+        });
     </script>
 </body>
 </html>

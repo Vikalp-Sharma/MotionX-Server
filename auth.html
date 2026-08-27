@@ -55,73 +55,42 @@
 
         document.getElementById('auth-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const username = document.getElementById('username').value;
+            const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
             const msg = document.getElementById('auth-message');
-            
-            // We use a fake email since supabase auth defaults to email
-            const email = `${username.toLowerCase()}@motionx.game`;
 
             msg.innerHTML = '<span style="color:var(--accent-color)">Processing...</span>';
 
             try {
                 if (mode === 'register') {
-                    // Check if username exists
-                    const { data: existing, error: existErr } = await supabaseClient.from('profiles').select('username').eq('username', username).maybeSingle();
-                    
-                    if (existErr && existErr.code !== 'PGRST116') {
-                        // Throw if there is an error OTHER than "no rows found"
-                        throw new Error("DB Error checking username: " + existErr.message);
-                    }
-
-                    if (existing) {
-                        msg.innerHTML = '<span class="error">Username already taken!</span>';
-                        return;
-                    }
-
-                    // Register
-                    const { data, error } = await supabaseClient.auth.signUp({
-                        email,
-                        password,
-                        options: {
-                            data: { username }
-                        }
+                    const { data, error } = await window.supabaseClient.rpc('register_user', {
+                        p_username: username,
+                        p_password: password
                     });
 
                     if (error) {
-                        msg.innerHTML = `<span class="error">Signup Error: ${error.message}</span>`;
-                        return;
-                    } 
-                    
-                    if (!data || !data.user) {
-                        msg.innerHTML = '<span class="error">Signup failed: Unknown error.</span>';
-                        return;
-                    }
-                    
-                    // Create profile
-                    const { error: profileError } = await supabaseClient.from('profiles').insert([
-                        { id: data.user.id, username: username }
-                    ]);
-                    
-                    if (profileError) {
-                        msg.innerHTML = `<span class="error">Profile error: ${profileError.message}</span>`;
+                        msg.innerHTML = `<span class="error">Database Error: ${error.message}</span>`;
+                    } else if (data === false) {
+                        msg.innerHTML = '<span class="error">Username already taken!</span>';
                     } else {
+                        localStorage.setItem('motionx_user', username);
                         msg.innerHTML = '<span class="success">Account created! Redirecting...</span>';
                         setTimeout(() => window.location.href = 'character.html', 1000);
                     }
-                    
                 } else {
-                    // Login
-                    const { data, error } = await supabaseClient.auth.signInWithPassword({
-                        email,
-                        password
+                    const { data, error } = await window.supabaseClient.rpc('login_user', {
+                        p_username: username,
+                        p_password: password
                     });
 
                     if (error) {
-                        msg.innerHTML = `<span class="error">Login Error: ${error.message}</span>`;
-                    } else {
+                        msg.innerHTML = `<span class="error">Database Error: ${error.message}</span>`;
+                    } else if (data === true) {
+                        localStorage.setItem('motionx_user', username);
                         msg.innerHTML = '<span class="success">Logged in! Redirecting...</span>';
                         setTimeout(() => window.location.href = 'character.html', 1000);
+                    } else {
+                        msg.innerHTML = '<span class="error">Invalid username or password!</span>';
                     }
                 }
             } catch (err) {
