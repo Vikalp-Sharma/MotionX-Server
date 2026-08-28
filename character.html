@@ -6,43 +6,140 @@
     <title>MotionX - My Character</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        .danger-zone { margin-top: 30px; padding: 15px; border: 2px dashed #d32f2f; background: rgba(0,0,0,0.3); border-radius: 8px; text-align: center; }
-        .danger-btn { background: transparent; border: 2px solid #d32f2f; color: #d32f2f; cursor: pointer; padding: 8px 16px; font-family: inherit; transition: 0.2s; }
-        .danger-btn:hover { background: #d32f2f; color: white; }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
 </head>
 <body>
+    <div class="bg-particles">
+        <div class="particle"></div><div class="particle"></div><div class="particle"></div>
+        <div class="particle"></div><div class="particle"></div><div class="particle"></div>
+    </div>
+
     <header>
-        <h1>MotionX</h1>
+        <div class="logo">
+            <h1>Motion<span class="logo-accent">X</span></h1>
+        </div>
         <nav>
-            <a href="index.html">Scoreboard</a>
-            <a href="#" id="nav-logout">Logout</a>
+            <a href="index.html">🏆 Scoreboard</a>
+            <a href="#" id="nav-logout">🚪 Logout</a>
         </nav>
     </header>
 
-    <main>
-        <div class="panel" id="char-panel" style="display:none;">
-            <h2 id="char-name">Player Stats</h2>
-            <table>
-                <tr><th>Total Coins</th><td id="stat-coins">0</td></tr>
-                <tr><th>Total Reps</th><td id="stat-reps">0</td></tr>
-                <tr><th>Max Streak</th><td id="stat-streak">0</td></tr>
-                <tr><th>Time Survived</th><td id="stat-time">0s</td></tr>
-                <tr><th>Games Played</th><td id="stat-games">0</td></tr>
-            </table>
+    <main style="flex-direction: column; align-items: center; gap: 1.5rem;">
+        <!-- Stats Overview -->
+        <div class="panel fade-in-up" id="char-panel" style="display:none; max-width: 700px;">
+            <div class="panel-header">
+                <h2 id="char-name">🧙 Player Stats</h2>
+                <p class="panel-subtitle">Your lifetime totals</p>
+            </div>
 
-            <div class="danger-zone">
-                <h3 style="color: #d32f2f; margin-top: 0;">Danger Zone</h3>
-                <button class="danger-btn" id="btn-delete-account">Delete My Account</button>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">🪙</div>
+                    <div class="stat-value" id="stat-coins">0</div>
+                    <div class="stat-label">Total Coins</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💪</div>
+                    <div class="stat-value" id="stat-reps">0</div>
+                    <div class="stat-label">Total Reps</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🔥</div>
+                    <div class="stat-value" id="stat-streak">0</div>
+                    <div class="stat-label">Max Streak</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏱️</div>
+                    <div class="stat-value" id="stat-time">0s</div>
+                    <div class="stat-label">Time Survived</div>
+                </div>
+                <div class="stat-card stat-card-wide">
+                    <div class="stat-icon">🎮</div>
+                    <div class="stat-value" id="stat-games">0</div>
+                    <div class="stat-label">Games Played</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game History Graph -->
+        <div class="panel fade-in-up" id="graph-panel" style="display:none; max-width: 700px;">
+            <div class="panel-header">
+                <h2>📈 Performance Over Time</h2>
+                <p class="panel-subtitle">Track your progress across sessions</p>
+            </div>
+
+            <div class="graph-controls">
+                <div class="control-group">
+                    <label>Mode:</label>
+                    <select id="filter-mode">
+                        <option value="ALL">All Modes</option>
+                        <option value="JUMP MODE">Jump Mode</option>
+                        <option value="CLAP STRETCH">Clap Stretch</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Stat:</label>
+                    <select id="filter-stat">
+                        <option value="coins">🪙 Coins</option>
+                        <option value="reps">💪 Reps</option>
+                        <option value="streak">🔥 Streak</option>
+                        <option value="duration">⏱️ Duration</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="history-chart"></canvas>
+            </div>
+
+            <!-- Recent Games Table -->
+            <div style="margin-top: 1.5rem;">
+                <h3 style="color: var(--primary-gold); margin-bottom: 0.8rem; font-size: 0.95rem;">📋 Recent Games</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Mode</th>
+                                <th>🪙</th>
+                                <th>💪</th>
+                                <th>🔥</th>
+                                <th>⏱️</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sessions-body">
+                            <tr><td colspan="6" style="text-align:center; opacity:0.5;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="panel fade-in-up" id="danger-panel" style="display:none; max-width: 700px;">
+            <div class="danger-zone" style="margin-top: 0;">
+                <h3>⚠️ Danger Zone</h3>
+                <p style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 12px;">This action is permanent and cannot be undone.</p>
+                <button class="danger-btn" id="btn-delete-account">🗑️ Delete My Account</button>
                 <div id="delete-msg" style="margin-top: 10px; font-size: 0.9rem;"></div>
             </div>
         </div>
-        <div id="loading-msg" style="font-size:1.5rem; text-align:center;">Loading profile...</div>
+
+        <div id="loading-msg" class="loading-text" style="font-size:1.5rem; text-align:center;">
+            <div class="spinner"></div> Loading profile...
+        </div>
     </main>
+
+    <footer>
+        <p>MotionX &copy; 2026 — Move your body, level up your character.</p>
+    </footer>
 
     <script src="app.js"></script>
     <script>
+        let allSessions = [];
+        let chart = null;
+
         document.addEventListener('DOMContentLoaded', async () => {
             const username = localStorage.getItem('motionx_user');
             
@@ -52,7 +149,8 @@
             }
 
             try {
-                const { data, error } = await window.supabaseClient
+                // Load profile stats
+                const { data: profile, error: profileErr } = await window.supabaseClient
                     .from('profiles')
                     .select('*')
                     .eq('username', username)
@@ -60,40 +158,169 @@
 
                 document.getElementById('loading-msg').style.display = 'none';
 
-                if (error) {
-                    document.getElementById('char-panel').innerHTML = `<h2 class="error">Error loading profile</h2>`;
+                if (profileErr) {
+                    document.getElementById('char-panel').innerHTML = `<div class="panel-header"><h2 class="error">❌ Error loading profile</h2></div>`;
                     document.getElementById('char-panel').style.display = 'block';
                     return;
                 }
 
-                document.getElementById('char-name').innerText = `${data.username}'s Profile`;
-                document.getElementById('stat-coins').innerText = data.coins;
-                document.getElementById('stat-reps').innerText = data.reps;
-                document.getElementById('stat-time').innerText = data.total_duration + 's';
-                document.getElementById('stat-streak').innerText = data.max_streak;
-                document.getElementById('stat-games').innerText = data.games_played;
+                document.getElementById('char-name').innerText = `🧙 ${profile.username}'s Profile`;
+                document.getElementById('stat-coins').innerText = profile.coins.toLocaleString();
+                document.getElementById('stat-reps').innerText = profile.reps.toLocaleString();
+                document.getElementById('stat-time').innerText = profile.total_duration + 's';
+                document.getElementById('stat-streak').innerText = profile.max_streak;
+                document.getElementById('stat-games').innerText = profile.games_played;
                 
                 document.getElementById('char-panel').style.display = 'block';
+                document.getElementById('danger-panel').style.display = 'block';
+
+                // Load game sessions
+                const { data: sessions, error: sessErr } = await window.supabaseClient
+                    .from('game_sessions')
+                    .select('*')
+                    .eq('username', username)
+                    .order('played_at', { ascending: true });
+
+                if (!sessErr && sessions && sessions.length > 0) {
+                    allSessions = sessions;
+                    document.getElementById('graph-panel').style.display = 'block';
+                    renderChart();
+                    renderTable();
+                } else {
+                    document.getElementById('graph-panel').style.display = 'block';
+                    document.getElementById('sessions-body').innerHTML = '<tr><td colspan="6" style="text-align:center; opacity:0.5;">No games played yet. Play a game to see your stats!</td></tr>';
+                }
+
             } catch (err) {
                 console.error("Exception:", err);
             }
         });
 
+        function getFilteredSessions() {
+            const mode = document.getElementById('filter-mode').value;
+            if (mode === 'ALL') return allSessions;
+            return allSessions.filter(s => s.mode === mode);
+        }
+
+        function renderChart() {
+            const stat = document.getElementById('filter-stat').value;
+            const sessions = getFilteredSessions();
+
+            const labels = sessions.map(s => new Date(s.played_at));
+            const values = sessions.map(s => s[stat]);
+
+            const statColors = {
+                coins: { line: '#ffbe0b', bg: 'rgba(255, 190, 11, 0.15)' },
+                reps: '#06d6a0',
+                streak: '#fb5607',
+                duration: '#00e5ff'
+            };
+
+            const color = typeof statColors[stat] === 'string' ? statColors[stat] : statColors[stat].line;
+            const bgColor = typeof statColors[stat] === 'object' ? statColors[stat].bg : color.replace(')', ', 0.15)').replace('rgb', 'rgba');
+
+            if (chart) chart.destroy();
+
+            chart = new Chart(document.getElementById('history-chart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: stat.charAt(0).toUpperCase() + stat.slice(1),
+                        data: values,
+                        borderColor: color,
+                        backgroundColor: bgColor,
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 4,
+                        pointHoverRadius: 7,
+                        pointBackgroundColor: color,
+                        pointBorderColor: '#0d0a0e',
+                        pointBorderWidth: 2,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: { unit: 'day', tooltipFormat: 'MMM d, yyyy h:mm a' },
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#8a7e72', font: { family: "'PixelFont', monospace", size: 10 } }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#8a7e72', font: { family: "'PixelFont', monospace", size: 11 } }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: '#f0e6d3', font: { family: "'PixelFont', monospace", size: 12 } }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(13, 10, 14, 0.9)',
+                            borderColor: '#ffbe0b',
+                            borderWidth: 1,
+                            titleColor: '#ffbe0b',
+                            bodyColor: '#f0e6d3',
+                            titleFont: { family: "'PixelFont', monospace" },
+                            bodyFont: { family: "'PixelFont', monospace" }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderTable() {
+            const sessions = getFilteredSessions();
+            const tbody = document.getElementById('sessions-body');
+
+            if (sessions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; opacity:0.5;">No games for this mode yet.</td></tr>';
+                return;
+            }
+
+            // Show most recent first in the table
+            const reversed = [...sessions].reverse().slice(0, 20);
+            tbody.innerHTML = reversed.map(s => {
+                const d = new Date(s.played_at);
+                const dateStr = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+                const modeShort = s.mode === 'JUMP MODE' ? '🦘 Jump' : s.mode === 'CLAP STRETCH' ? '👏 Clap' : s.mode;
+                return `<tr>
+                    <td>${dateStr}</td>
+                    <td>${modeShort}</td>
+                    <td>${s.coins}</td>
+                    <td>${s.reps}</td>
+                    <td>${s.streak}</td>
+                    <td>${s.duration}s</td>
+                </tr>`;
+            }).join('');
+        }
+
+        // Re-render on filter change
+        document.getElementById('filter-mode').addEventListener('change', () => { renderChart(); renderTable(); });
+        document.getElementById('filter-stat').addEventListener('change', () => { renderChart(); });
+
+        // Logout
         document.getElementById('nav-logout').addEventListener('click', (e) => {
             e.preventDefault();
             localStorage.removeItem('motionx_user');
             window.location.href = 'index.html';
         });
 
+        // Delete account
         document.getElementById('btn-delete-account').addEventListener('click', async () => {
             const username = localStorage.getItem('motionx_user');
             if (!username) return;
 
-            const pass = prompt(`WARNING: This is permanent!\nTo delete your account, please type your password for '${username}':`);
+            const pass = prompt(`WARNING: This is permanent!\nTo delete your account, type your password for "${username}":`);
             if (!pass) return;
 
             const msg = document.getElementById('delete-msg');
-            msg.innerHTML = '<span style="color:var(--accent-color)">Deleting...</span>';
+            msg.innerHTML = '<span class="loading-text"><div class="spinner"></div> Deleting...</span>';
 
             try {
                 const { data, error } = await window.supabaseClient.rpc('delete_self', {
@@ -102,16 +329,16 @@
                 });
 
                 if (error) {
-                    msg.innerHTML = `<span class="error">Error: ${error.message}</span>`;
+                    msg.innerHTML = `<span class="error">❌ ${error.message}</span>`;
                 } else if (data === true) {
-                    alert("Your account has been deleted.");
+                    alert("Your account has been deleted. Goodbye, warrior.");
                     localStorage.removeItem('motionx_user');
                     window.location.href = 'index.html';
                 } else {
-                    msg.innerHTML = '<span class="error">Incorrect password!</span>';
+                    msg.innerHTML = '<span class="error">❌ Incorrect password!</span>';
                 }
             } catch (err) {
-                msg.innerHTML = `<span class="error">Exception: ${err.message}</span>`;
+                msg.innerHTML = `<span class="error">❌ ${err.message}</span>`;
             }
         });
     </script>
